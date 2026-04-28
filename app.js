@@ -107,70 +107,33 @@ async function fetchConversations() {
     }
 }
 
-function getInitials(name) {
-    const parts = name.trim().split(/\s+/);
-    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
-    return name.substring(0, 2).toUpperCase();
-}
-
-let searchQuery = '';
-const searchInput = document.getElementById('search-input');
-if (searchInput) {
-    searchInput.addEventListener('input', (e) => {
-        searchQuery = e.target.value.toLowerCase();
-        renderList();
-    });
-}
-
 function renderList() {
     listContainer.innerHTML = '';
-
+    
     if (allConversations.length === 0) {
-        listContainer.innerHTML = '<p class="loading">Henüz kayıtlı konuşma bulunmuyor.</p>';
+        listContainer.innerHTML = '<p style="padding:1rem;">Henüz kayıtlı konuşma bulunmuyor.</p>';
         return;
     }
 
     const grouped = {};
     allConversations.forEach(item => {
         let tel = item.telefon_numarasi || 'Bilinmeyen No';
-        if (tel.includes('@')) tel = tel.split('@')[0];
+        if(tel.includes('@')) tel = tel.split('@')[0];
+
         const ad = item.kisi_adi && item.kisi_adi.trim() !== '' ? item.kisi_adi : 'İsimsiz';
         const key = `${tel} - ${ad}`;
+        
         if (!grouped[key]) grouped[key] = [];
         grouped[key].push(item);
     });
 
-    const filteredKeys = Object.keys(grouped).filter(key =>
-        key.toLowerCase().includes(searchQuery)
-    );
-
-    if (filteredKeys.length === 0) {
-        listContainer.innerHTML = '<p class="loading">Sonuç bulunamadı.</p>';
-        return;
-    }
-
-    filteredKeys.forEach(key => {
-        const parts = key.split(' - ');
-        const name = parts[1] || parts[0];
-        const phone = parts[0];
-        const lastMsg = grouped[key][grouped[key].length - 1];
-        const preview = lastMsg?.kullanici_mesaji?.substring(0, 40) || 'Mesaj yok';
-
+    Object.keys(grouped).forEach(key => {
         const btn = document.createElement('button');
         btn.className = 'conversation-btn';
-        if (currentActiveConversationTitle === key) btn.classList.add('active');
-
-        btn.innerHTML = `
-            <div class="conv-btn-inner">
-                <div class="conv-avatar">${getInitials(name)}</div>
-                <div class="conv-text">
-                    <div class="conv-name">${name}</div>
-                    <div class="conv-preview">${preview}...</div>
-                </div>
-            </div>
-            <span class="btn-icon">›</span>
-        `;
-
+        if (currentActiveConversationTitle === key) {
+            btn.classList.add('active'); // Aktif olanı işaretle
+        }
+        btn.innerHTML = `<span>${key}</span><span class="btn-icon">➔</span>`;
         btn.onclick = () => {
             document.querySelectorAll('.conversation-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
@@ -179,30 +142,22 @@ function renderList() {
         listContainer.appendChild(btn);
     });
 
+    // Eğer açık bir konuşma varsa ve yeni mesaj geldiyse o ekranı da güncelle
     if (currentActiveConversationTitle && grouped[currentActiveConversationTitle]) {
         showDetail(currentActiveConversationTitle, grouped[currentActiveConversationTitle]);
     }
 }
 
 function showDetail(title, messages) {
-    currentActiveConversationTitle = title;
+    currentActiveConversationTitle = title; // Açık olan konuşmayı kaydet
 
     if (window.innerWidth <= 768) {
         listSection.classList.add('mobile-hidden');
         detailSection.classList.add('mobile-active');
     }
-
+    
     detailSection.classList.remove('hidden-desktop');
     detailTitle.textContent = title;
-
-    // Avatar güncelle
-    const detailAvatar = document.getElementById('detail-avatar');
-    if (detailAvatar) {
-        const parts = title.split(' - ');
-        const name = parts[1] || parts[0];
-        detailAvatar.textContent = getInitials(name);
-    }
-
     detailContainer.innerHTML = '';
     
     messages.forEach(msg => {
@@ -262,9 +217,9 @@ function initCalendar() {
         snapDuration: '00:30:00', // SÜRÜKLERKEN 30 DK'YA YAPIŞSIN
         allDaySlot: false,       // Tüm gün kısmını gizle (saat odaklı olsun)
         headerToolbar: {
-            left: 'prev,next today',
+            left: 'prev',
             center: 'title',
-            right: 'dayGridMonth,timeGridWeek,timeGridDay'
+            right: 'next today dayGridMonth,timeGridWeek,timeGridDay'
         },
         buttonText: {
             today: 'Bugün',
