@@ -20,12 +20,28 @@ let authError = null;
 try {
     if (process.env.GOOGLE_CREDENTIALS) {
         let credsRaw = process.env.GOOGLE_CREDENTIALS.trim();
-        // Eğer başında/sonunda tırnak kalmışsa temizle
+        
+        // Önce temizleme (tırnaklar vs.)
         if ((credsRaw.startsWith("'") && credsRaw.endsWith("'")) || 
             (credsRaw.startsWith('"') && credsRaw.endsWith('"'))) {
             credsRaw = credsRaw.slice(1, -1);
         }
-        const credentials = JSON.parse(credsRaw);
+
+        let credentials;
+        // Eğer Base64 formatındaysa çöz, değilse direkt parse et
+        try {
+            // Base64 kontrolü (basitçe: süslü parantezle başlamıyorsa Base64 olabilir)
+            if (!credsRaw.startsWith('{')) {
+                const decoded = Buffer.from(credsRaw, 'base64').toString('utf-8');
+                credentials = JSON.parse(decoded);
+                console.log('✅ Base64 JSON başarıyla çözüldü.');
+            } else {
+                credentials = JSON.parse(credsRaw);
+            }
+        } catch (e) {
+            throw new Error("JSON Çözme Hatası: " + e.message);
+        }
+
         const auth = new google.auth.GoogleAuth({
             credentials,
             scopes: SCOPES,
