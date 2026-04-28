@@ -64,7 +64,7 @@ navRandevular.addEventListener('click', () => {
                 calendar.refetchEvents();
                 console.log('📅 Takvim otomatik güncellendi.');
             }
-        }, 30000);
+        }, 3000);
     }
 });
 
@@ -323,7 +323,7 @@ function initCalendar() {
     calendarAutoRefresh = setInterval(() => {
         calendar.refetchEvents();
         console.log('📅 Takvim otomatik güncellendi.');
-    }, 30000);
+    }, 3000);
 }
 
 async function updateEventTimes(event) {
