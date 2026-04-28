@@ -1,11 +1,11 @@
 version: "3.8"
 
 services:
-  konusmalar-web:
+  ilkeryalcin-web:
     build: .
-    container_name: konusmalar-web
-    ports:
-      - "8085:80"
+    # container_name: ilkeryalcin-web  <-- Dokploy'un kendi isimlendirmesine bırakmak en iyisidir
+    # ports:
+    #  - "8085:80" <-- Portu Dokploy panelinden yönetmek çakışmayı önler
     environment:
       - GOOGLE_CREDENTIALS=${GOOGLE_CREDENTIALS}
     restart: unless-stopped
