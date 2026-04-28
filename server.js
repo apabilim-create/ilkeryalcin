@@ -28,28 +28,37 @@ try {
         }
 
         let credentials;
-        // Eğer Base64 formatındaysa çöz, değilse direkt parse et
         try {
-            // Base64 kontrolü (basitçe: süslü parantezle başlamıyorsa Base64 olabilir)
             if (!credsRaw.startsWith('{')) {
                 const decoded = Buffer.from(credsRaw, 'base64').toString('utf-8');
                 credentials = JSON.parse(decoded);
-                // Özel anahtardaki \n karakterlerini düzelt (OSSL_UNSUPPORTED hatasını önler)
-                if (credentials.private_key) {
-                    credentials.private_key = credentials.private_key.replace(/\\n/g, '\n');
-                }
                 console.log('✅ Base64 JSON başarıyla çözüldü.');
             } else {
                 credentials = JSON.parse(credsRaw);
+            }
+
+            if (credentials.private_key) {
+                // Tüm olası kaçış karakterlerini ve hatalı formatları düzelt
+                credentials.private_key = credentials.private_key
+                    .replace(/\\n/g, '\n')
+                    .replace(/\n\n/g, '\n')
+                    .trim();
+                
+                // Başında/sonunda tırnak kalmışsa (bazen oluyor) temizle
+                if (credentials.private_key.startsWith('"') && credentials.private_key.endsWith('"')) {
+                    credentials.private_key = credentials.private_key.slice(1, -1);
+                }
+                
+                console.log('🔑 Anahtar formatı düzenlendi (Uzunluk: ' + credentials.private_key.length + ')');
             }
         } catch (e) {
             throw new Error("JSON Çözme Hatası: " + e.message);
         }
 
-        const auth = new google.auth.GoogleAuth({
-            credentials,
-            scopes: SCOPES,
-        });
+        // JWT Client kullanarak yetkilendirme (Daha sağlam yöntem)
+        const auth = google.auth.fromJSON(credentials);
+        auth.scopes = SCOPES;
+        
         calendar = google.calendar({ version: 'v3', auth });
         console.log('✅ Google Calendar yetkilendirmesi hazır.');
     } else {
