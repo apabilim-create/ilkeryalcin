@@ -217,9 +217,9 @@ function initCalendar() {
         snapDuration: '00:30:00', // SÜRÜKLERKEN 30 DK'YA YAPIŞSIN
         allDaySlot: false,       // Tüm gün kısmını gizle (saat odaklı olsun)
         headerToolbar: {
-            left: 'prev,title,next',
-            center: '',
-            right: 'today dayGridMonth,timeGridWeek,timeGridDay'
+            left: 'prev,next today',
+            center: 'title',
+            right: 'dayGridMonth,timeGridWeek,timeGridDay'
         },
         buttonText: {
             today: 'Bugün',
