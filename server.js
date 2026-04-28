@@ -12,45 +12,48 @@ app.use(express.json());
 
 // Google Calendar Yetkilendirmesi
 const SCOPES = ['https://www.googleapis.com/auth/calendar'];
-const CALENDAR_ID = '6f3516420c4571ce070d85d4276f156b8b896ee54a32c02099d3fa710e8ec0dc@group.calendar.google.com';
+const CALENDAR_ID = 'dc484578af91bbae30fe5da087d199317240b91a380841960d1ecddc6dc8d9f8@group.calendar.google.com';
 
-let auth;
+let calendar;
 let authError = null;
 
 try {
     if (process.env.GOOGLE_CREDENTIALS) {
-        const keysEnvVar = process.env.GOOGLE_CREDENTIALS;
-        const keys = JSON.parse(keysEnvVar);
-        auth = google.auth.fromJSON(keys);
-        auth.scopes = SCOPES;
+        const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS);
+        const auth = new google.auth.GoogleAuth({
+            credentials,
+            scopes: SCOPES,
+        });
+        calendar = google.calendar({ version: 'v3', auth });
+        console.log('Google Calendar yetkilendirmesi hazır.');
     } else {
-        authError = "GOOGLE_CREDENTIALS çevre değişkeni bulunamadı. Dokploy ayarlarını kontrol edin.";
+        authError = "GOOGLE_CREDENTIALS bulunamadı.";
     }
 } catch (err) {
-    authError = "GOOGLE_CREDENTIALS JSON formatı hatalı: " + err.message;
-}
-
-let calendar;
-if (!authError) {
-    calendar = google.calendar({ version: 'v3', auth });
+    console.error('Auth Başlatma Hatası:', err);
+    authError = "Yetkilendirme Hatası: " + err.message;
 }
 
 // Takvim etkinliklerini getirme
 app.get('/api/calendar/events', async (req, res) => {
-    if (authError) {
+    if (authError || !calendar) {
         return res.status(500).json({ error: 'Yetkilendirme Hatası', details: authError });
     }
     try {
+        const startOfMonth = new Date();
+        startOfMonth.setDate(1);
+        startOfMonth.setHours(0, 0, 0, 0);
+
         const response = await calendar.events.list({
             calendarId: CALENDAR_ID,
-            timeMin: new Date().toISOString(), // Bugünden sonrasını getir
-            maxResults: 50,
+            timeMin: startOfMonth.toISOString(), // Ayın başından itibaren getir
+            maxResults: 100,
             singleEvents: true,
             orderBy: 'startTime',
         });
-        res.json(response.data.items);
+        res.json(response.data.items || []);
     } catch (error) {
-        console.error('Takvim API Hatası:', error);
+        console.error('Takvim API Hatası (List):', error);
         res.status(500).json({ error: 'Etkinlikler alınamadı', details: error.message });
     }
 });
