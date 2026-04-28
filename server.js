@@ -15,55 +15,35 @@ const SCOPES = ['https://www.googleapis.com/auth/calendar'];
 const CALENDAR_ID = 'dc484578af91bbae30fe5da087d199317240b91a380841960d1ecddc6dc8d9f8@group.calendar.google.com';
 
 let calendar;
+let calendarAuth;
 let authError = null;
 
 try {
-    if (process.env.GOOGLE_CREDENTIALS) {
-        let credsRaw = process.env.GOOGLE_CREDENTIALS.trim();
-        
-        // Önce temizleme (tırnaklar vs.)
-        if ((credsRaw.startsWith("'") && credsRaw.endsWith("'")) || 
-            (credsRaw.startsWith('"') && credsRaw.endsWith('"'))) {
-            credsRaw = credsRaw.slice(1, -1);
-        }
+    const clientEmail = process.env.GOOGLE_CLIENT_EMAIL;
+    const privateKeyRaw = process.env.GOOGLE_PRIVATE_KEY;
 
-        let credentials;
-        try {
-            if (!credsRaw.startsWith('{')) {
-                const decoded = Buffer.from(credsRaw, 'base64').toString('utf-8');
-                credentials = JSON.parse(decoded);
-                console.log('✅ Base64 JSON başarıyla çözüldü.');
-            } else {
-                credentials = JSON.parse(credsRaw);
-            }
+    if (clientEmail && privateKeyRaw) {
+        // Private key'deki literal \n karakterlerini gerçek newline'a çevir
+        const privateKey = privateKeyRaw.replace(/\\n/g, '\n');
 
-            if (credentials.private_key) {
-                // Tüm olası kaçış karakterlerini ve hatalı formatları düzelt
-                credentials.private_key = credentials.private_key
-                    .replace(/\\n/g, '\n')
-                    .replace(/\n\n/g, '\n')
-                    .trim();
-                
-                // Başında/sonunda tırnak kalmışsa (bazen oluyor) temizle
-                if (credentials.private_key.startsWith('"') && credentials.private_key.endsWith('"')) {
-                    credentials.private_key = credentials.private_key.slice(1, -1);
-                }
-                
-                console.log('🔑 Anahtar formatı düzenlendi (Uzunluk: ' + credentials.private_key.length + ')');
-            }
-        } catch (e) {
-            throw new Error("JSON Çözme Hatası: " + e.message);
-        }
+        console.log('📧 Client Email:', clientEmail);
+        console.log('🔑 Private Key uzunluk:', privateKey.length);
+        console.log('🔑 Key başlangıç:', privateKey.substring(0, 40));
 
-        // JWT Client kullanarak yetkilendirme (Daha sağlam yöntem)
-        const auth = google.auth.fromJSON(credentials);
-        auth.scopes = SCOPES;
-        
-        calendar = google.calendar({ version: 'v3', auth });
+        const { JWT } = require('google-auth-library');
+        calendarAuth = new JWT({
+            email: clientEmail,
+            key: privateKey,
+            scopes: SCOPES,
+        });
+
+        calendar = google.calendar({ version: 'v3', auth: calendarAuth });
         console.log('✅ Google Calendar yetkilendirmesi hazır.');
     } else {
-        console.error('❌ HATA: GOOGLE_CREDENTIALS çevre değişkeni sistemde bulunamadı!');
-        authError = "GOOGLE_CREDENTIALS bulunamadı.";
+        console.error('❌ HATA: GOOGLE_CLIENT_EMAIL veya GOOGLE_PRIVATE_KEY bulunamadı!');
+        console.error('   GOOGLE_CLIENT_EMAIL:', clientEmail ? 'VAR' : 'YOK');
+        console.error('   GOOGLE_PRIVATE_KEY:', privateKeyRaw ? 'VAR' : 'YOK');
+        authError = "Google credential env vars bulunamadı.";
     }
 } catch (err) {
     console.error('Auth Başlatma Hatası:', err);
@@ -144,7 +124,6 @@ app.delete('/api/calendar/delete/:eventId', async (req, res) => {
     
     const { eventId } = req.params;
     try {
-        const calendar = google.calendar({ version: 'v3', auth });
         await calendar.events.delete({
             calendarId: CALENDAR_ID,
             eventId: eventId,
@@ -164,7 +143,6 @@ app.patch('/api/calendar/update/:eventId', async (req, res) => {
     const { startDateTime, endDateTime } = req.body;
     
     try {
-        const calendar = google.calendar({ version: 'v3', auth });
         await calendar.events.patch({
             calendarId: CALENDAR_ID,
             eventId: eventId,
