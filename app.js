@@ -73,7 +73,7 @@ async function fetchConversations() {
     
     try {
         const { data, error } = await supabaseClient
-            .from('konusmalar')
+            .from('ilker_konusmalar')
             .select('*')
             .order('olusturulma_zamani', { ascending: true });
 
@@ -395,7 +395,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 {
                     event: '*', // INSERT, UPDATE, DELETE hepsini dinle
                     schema: 'public',
-                    table: 'konusmalar'
+                    table: 'ilker_konusmalar'
                 },
                 (payload) => {
                     console.log('Canlı değişiklik algılandı (Realtime):', payload);
