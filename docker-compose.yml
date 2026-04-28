@@ -1,7 +1,7 @@
 version: "3.8"
 
 services:
-  ilkeryalcin-web:
+  konusmalar-web:
     build: .
     # container_name: ilkeryalcin-web  <-- Dokploy'un kendi isimlendirmesine bırakmak en iyisidir
     # ports:
