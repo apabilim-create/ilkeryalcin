@@ -459,17 +459,38 @@ body {
         min-height: 400px;
     }
 
-    /* FullCalendar Başlık Kısmı Mobilde Sığsın */
+    /* FullCalendar Mobil Toolbar */
     .fc .fc-toolbar {
-        flex-direction: column;
-        gap: 10px;
-    }
-    
-    .fc-toolbar-chunk {
-        display: flex;
-        justify-content: center;
         flex-wrap: wrap;
-        gap: 5px;
+        gap: 8px;
+        justify-content: space-between;
+    }
+
+    /* Oklar + Tarih grubu (sol) tam genişlikte değil, içeriğine göre */
+    .fc-toolbar-chunk:first-child {
+        display: flex;
+        align-items: center;
+        gap: 2px; /* okları tarife yaklaştır */
+        order: 1;
+    }
+
+    /* Sağ butonlar (Bugün, Ay, Hafta, Gün) */
+    .fc-toolbar-chunk:last-child {
+        display: flex;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        gap: 4px;
+        order: 2;
+    }
+
+    .fc .fc-toolbar-title {
+        font-size: 0.9rem !important;
+        padding: 0 4px;
+    }
+
+    .fc .fc-button-primary {
+        font-size: 0.75rem !important;
+        padding: 4px 8px !important;
     }
 }
 
