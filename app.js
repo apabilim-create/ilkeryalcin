@@ -31,6 +31,7 @@ const viewRandevular = document.getElementById('view-randevular');
 
 // --- CALENDAR GLOBAL VARIABLE ---
 let calendar;
+let calendarAutoRefresh = null;
 
 // Sidebar Navigation Logic
 navKonusmalar.addEventListener('click', () => {
@@ -53,6 +54,25 @@ navRandevular.addEventListener('click', () => {
         initCalendar();
     } else {
         setTimeout(() => calendar.render(), 100); // Görünür olduktan sonra tekrar çiz
+        calendar.refetchEvents(); // Takvime geçince hemen yenile
+    }
+
+    // Otomatik yenilemeyi başlat (30 saniyede bir)
+    if (!calendarAutoRefresh) {
+        calendarAutoRefresh = setInterval(() => {
+            if (calendar) {
+                calendar.refetchEvents();
+                console.log('📅 Takvim otomatik güncellendi.');
+            }
+        }, 30000);
+    }
+});
+
+navKonusmalar.addEventListener('click', () => {
+    // Takvim görünümünden çıkınca otomatik yenilemeyi durdur
+    if (calendarAutoRefresh) {
+        clearInterval(calendarAutoRefresh);
+        calendarAutoRefresh = null;
     }
 });
 
@@ -298,6 +318,12 @@ function initCalendar() {
         }
     });
     calendar.render();
+
+    // İlk yüklemeden sonra otomatik yenilemeyi başlat (30 saniyede bir)
+    calendarAutoRefresh = setInterval(() => {
+        calendar.refetchEvents();
+        console.log('📅 Takvim otomatik güncellendi.');
+    }, 30000);
 }
 
 async function updateEventTimes(event) {
