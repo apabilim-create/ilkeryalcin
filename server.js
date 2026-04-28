@@ -25,8 +25,9 @@ try {
             scopes: SCOPES,
         });
         calendar = google.calendar({ version: 'v3', auth });
-        console.log('Google Calendar yetkilendirmesi hazır.');
+        console.log('✅ Google Calendar yetkilendirmesi hazır.');
     } else {
+        console.error('❌ HATA: GOOGLE_CREDENTIALS çevre değişkeni sistemde bulunamadı!');
         authError = "GOOGLE_CREDENTIALS bulunamadı.";
     }
 } catch (err) {
