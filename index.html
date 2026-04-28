@@ -4,24 +4,39 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Yönetim Paneli</title>
+    <meta name="description" content="Randevu ve konuşma yönetim paneli">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="style.css">
     <!-- FullCalendar CSS -->
     <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css" rel="stylesheet">
 </head>
 <body>
-    
+
     <!-- Ana Sol Menü (Global Sidebar) -->
     <nav class="global-sidebar">
         <div class="sidebar-header">
-            <h2>Panel</h2>
+            <div class="sidebar-logo">
+                <div class="sidebar-logo-icon">⚡</div>
+                <div>
+                    <h2>Panel</h2>
+                    <div class="sidebar-subtitle">Yönetim Sistemi</div>
+                </div>
+            </div>
         </div>
         <div class="nav-links">
             <button id="nav-konusmalar" class="nav-btn active">
                 <span class="icon">💬</span> Konuşmalar
             </button>
             <button id="nav-randevular" class="nav-btn">
-                <span class="icon">📅</span> Randevu Ekranı
+                <span class="icon">📅</span> Randevular
             </button>
+        </div>
+        <div class="sidebar-footer">
+            <div class="sidebar-status">
+                <div class="status-dot"></div>
+                Sistem aktif
+            </div>
         </div>
     </nav>
 
@@ -29,27 +44,31 @@
     <div class="main-wrapper">
         <header class="header">
             <h1 id="page-title">Konuşmalar</h1>
+            <div class="header-badge">Canlı</div>
         </header>
-        
+
         <!-- GÖRÜNÜM 1: KONUŞMALAR -->
         <main id="view-konusmalar" class="container">
             <div id="supabase-error-msg"></div>
+
             <!-- Konuşma Listesi -->
             <section id="conversation-list" class="list-section">
+                <div class="list-search-bar">
+                    <input type="text" id="search-input" placeholder="🔍  Konuşma ara...">
+                </div>
                 <div id="list-container" class="card-container">
                     <p class="loading">Veriler yükleniyor...</p>
                 </div>
             </section>
 
-            <!-- Konuşma Detayı (Sağ Taraf) -->
+            <!-- Konuşma Detayı -->
             <section id="conversation-detail" class="detail-section hidden-desktop">
                 <div class="detail-header">
-                    <button id="back-btn" class="btn">← Geri</button>
+                    <button id="back-btn">← Geri</button>
+                    <div class="detail-avatar" id="detail-avatar">?</div>
                     <h2 id="detail-title">Lütfen bir konuşma seçin</h2>
                 </div>
-                <div id="detail-container" class="messages-container">
-                    <!-- Mesajlar buraya gelecek -->
-                </div>
+                <div id="detail-container" class="messages-container"></div>
             </section>
         </main>
 
@@ -57,15 +76,15 @@
         <main id="view-randevular" class="container hidden-view">
             <div class="calendar-wrapper">
                 <div class="calendar-header">
-                    <h2>📅 Randevu Ekranı</h2>
-                    <button id="btn-show-add-form" class="btn">Yeni Randevu Ekle</button>
+                    <h2>📅 Randevu Takvimi</h2>
+                    <button id="btn-show-add-form" class="btn">+ Yeni Randevu</button>
                 </div>
 
-                <!-- Randevu Ekleme Formu (Başlangıçta Gizli) -->
+                <!-- Randevu Ekleme Formu -->
                 <div id="add-appointment-form" class="appointment-form hidden-form">
-                    <h3>Yeni Randevu Oluştur</h3>
+                    <h3>✨ Yeni Randevu Oluştur</h3>
                     <div class="form-group">
-                        <label>Randevu Başlığı (Kişi/Konu)</label>
+                        <label>Randevu Başlığı (Kişi / Konu)</label>
                         <input type="text" id="apt-summary" placeholder="Örn: Ali Yılmaz - Kontrol" required>
                     </div>
                     <div class="form-row">
@@ -86,10 +105,10 @@
                         <button id="btn-save-appointment" class="btn btn-save">Kaydet</button>
                         <button id="btn-cancel-appointment" class="btn btn-secondary">İptal</button>
                     </div>
-                    <div id="apt-msg" style="margin-top: 10px;"></div>
+                    <div id="apt-msg"></div>
                 </div>
 
-                <!-- Google Calendar Görünümlü Takvim -->
+                <!-- Takvim -->
                 <div class="calendar-container-card">
                     <div id="calendar"></div>
                 </div>
