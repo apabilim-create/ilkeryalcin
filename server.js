@@ -19,7 +19,13 @@ let authError = null;
 
 try {
     if (process.env.GOOGLE_CREDENTIALS) {
-        const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS);
+        let credsRaw = process.env.GOOGLE_CREDENTIALS.trim();
+        // Eğer başında/sonunda tırnak kalmışsa temizle
+        if ((credsRaw.startsWith("'") && credsRaw.endsWith("'")) || 
+            (credsRaw.startsWith('"') && credsRaw.endsWith('"'))) {
+            credsRaw = credsRaw.slice(1, -1);
+        }
+        const credentials = JSON.parse(credsRaw);
         const auth = new google.auth.GoogleAuth({
             credentials,
             scopes: SCOPES,
