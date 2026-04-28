@@ -1,0 +1,5 @@
+/* Ekstra CSS Sınıfı - Asistan Mesajları İçin */
+.asistan-msg {
+    background-color: var(--msg-bg);
+    align-self: flex-end;
+}

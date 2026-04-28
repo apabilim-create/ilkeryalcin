@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yönetim Paneli</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- FullCalendar CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css" rel="stylesheet">
+</head>
+<body>
+    
+    <!-- Ana Sol Menü (Global Sidebar) -->
+    <nav class="global-sidebar">
+        <div class="sidebar-header">
+            <h2>Panel</h2>
+        </div>
+        <div class="nav-links">
+            <button id="nav-konusmalar" class="nav-btn active">
+                <span class="icon">💬</span> Konuşmalar
+            </button>
+            <button id="nav-randevular" class="nav-btn">
+                <span class="icon">📅</span> Randevu Ekranı
+            </button>
+        </div>
+    </nav>
+
+    <!-- Sağ İçerik Alanı -->
+    <div class="main-wrapper">
+        <header class="header">
+            <h1 id="page-title">Konuşmalar</h1>
+        </header>
+        
+        <!-- GÖRÜNÜM 1: KONUŞMALAR -->
+        <main id="view-konusmalar" class="container">
+            <div id="supabase-error-msg"></div>
+            <!-- Konuşma Listesi -->
+            <section id="conversation-list" class="list-section">
+                <div id="list-container" class="card-container">
+                    <p class="loading">Veriler yükleniyor...</p>
+                </div>
+            </section>
+
+            <!-- Konuşma Detayı (Sağ Taraf) -->
+            <section id="conversation-detail" class="detail-section hidden-desktop">
+                <div class="detail-header">
+                    <button id="back-btn" class="btn">← Geri</button>
+                    <h2 id="detail-title">Lütfen bir konuşma seçin</h2>
+                </div>
+                <div id="detail-container" class="messages-container">
+                    <!-- Mesajlar buraya gelecek -->
+                </div>
+            </section>
+        </main>
+
+        <!-- GÖRÜNÜM 2: RANDEVULAR -->
+        <main id="view-randevular" class="container hidden-view">
+            <div class="calendar-wrapper">
+                <div class="calendar-header">
+                    <h2>📅 Randevu Ekranı</h2>
+                    <button id="btn-show-add-form" class="btn">Yeni Randevu Ekle</button>
+                </div>
+
+                <!-- Randevu Ekleme Formu (Başlangıçta Gizli) -->
+                <div id="add-appointment-form" class="appointment-form hidden-form">
+                    <h3>Yeni Randevu Oluştur</h3>
+                    <div class="form-group">
+                        <label>Randevu Başlığı (Kişi/Konu)</label>
+                        <input type="text" id="apt-summary" placeholder="Örn: Ali Yılmaz - Kontrol" required>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Başlangıç Zamanı</label>
+                            <input type="datetime-local" id="apt-start" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Bitiş Zamanı</label>
+                            <input type="datetime-local" id="apt-end" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Açıklama (Opsiyonel)</label>
+                        <textarea id="apt-desc" rows="2" placeholder="Randevu detayları..."></textarea>
+                    </div>
+                    <div class="form-actions">
+                        <button id="btn-save-appointment" class="btn btn-save">Kaydet</button>
+                        <button id="btn-cancel-appointment" class="btn btn-secondary">İptal</button>
+                    </div>
+                    <div id="apt-msg" style="margin-top: 10px;"></div>
+                </div>
+
+                <!-- Google Calendar Görünümlü Takvim -->
+                <div class="calendar-container-card">
+                    <div id="calendar"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
