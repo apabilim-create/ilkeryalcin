@@ -34,6 +34,10 @@ try {
             if (!credsRaw.startsWith('{')) {
                 const decoded = Buffer.from(credsRaw, 'base64').toString('utf-8');
                 credentials = JSON.parse(decoded);
+                // Özel anahtardaki \n karakterlerini düzelt (OSSL_UNSUPPORTED hatasını önler)
+                if (credentials.private_key) {
+                    credentials.private_key = credentials.private_key.replace(/\\n/g, '\n');
+                }
                 console.log('✅ Base64 JSON başarıyla çözüldü.');
             } else {
                 credentials = JSON.parse(credsRaw);
