@@ -10,7 +10,7 @@ const PORT = process.env.PORT || 80;
 
 // ─── KİMLİK BİLGİLERİ ───────────────────────────────────────────────
 const ADMIN_USERNAME = 'Bilalilker';
-const ADMIN_PASSWORD = '1543';
+const ADMIN_PASSWORD = '1453';
 // ────────────────────────────────────────────────────────────────────
 
 app.use(cors());
