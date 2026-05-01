@@ -18,17 +18,46 @@ app.use(express.json());
 
 // Session ayarları
 app.use(session({
-    secret: 'ilkeryalcin-panel-secret-2024',
+    secret: 'ilkeryalcin-panel-secret-2024-secure',
     resave: false,
     saveUninitialized: false,
     cookie: {
-        secure: false,       // HTTP için false, HTTPS kullananlar true yapabilir
+        secure: false, 
         httpOnly: true,
-        maxAge: 8 * 60 * 60 * 1000  // 8 saat
+        maxAge: 8 * 60 * 60 * 1000 // 8 saat
     }
 }));
 
-// ─── LOGIN ENDPOINT ──────────────────────────────────────────────────
+// ─── GÜVENLİK DUVARI (MIDDLEWARE) ───────────────────────────────────
+// Bu fonksiyon her istekte çalışır ve izinsiz geçişi engeller.
+const requireAuth = (req, res, next) => {
+    // İzin verilen yollar (Giriş sayfası ve giriş API'si)
+    const publicPaths = ['/login', '/api/login'];
+    
+    if (publicPaths.includes(req.path)) {
+        return next();
+    }
+
+    if (req.session && req.session.loggedIn) {
+        return next();
+    }
+
+    // Yetkisiz erişim: API ise 401 hatası, sayfa ise Login'e yönlendir
+    if (req.path.startsWith('/api/')) {
+        return res.status(401).json({ error: 'Oturum açmanız gerekiyor.' });
+    }
+    res.redirect('/login');
+};
+
+// ─── ROTALAR ────────────────────────────────────────────────────────
+
+// 1. Giriş Sayfası (Herkes görebilir)
+app.get('/login', (req, res) => {
+    if (req.session.loggedIn) return res.redirect('/panel');
+    res.sendFile(path.join(__dirname, 'login.html'));
+});
+
+// 2. Giriş İşlemi
 app.post('/api/login', (req, res) => {
     const { username, password } = req.body;
     if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
@@ -36,49 +65,34 @@ app.post('/api/login', (req, res) => {
         req.session.user = username;
         return res.json({ success: true });
     }
-    return res.status(401).json({ success: false, error: 'Hatalı kullanıcı adı veya şifre.' });
+    return res.status(401).json({ success: false });
 });
 
-// ─── LOGOUT ENDPOINT ─────────────────────────────────────────────────
+// 3. Çıkış İşlemi
 app.post('/api/logout', (req, res) => {
     req.session.destroy();
     res.json({ success: true });
 });
 
-// ─── AUTH MIDDLEWARE ─────────────────────────────────────────────────
-function requireAuth(req, res, next) {
-    if (req.session && req.session.loggedIn) {
-        return next();
-    }
-    // API isteği mi yoksa sayfa isteği mi?
-    if (req.path.startsWith('/api/')) {
-        return res.status(401).json({ error: 'Oturum açmanız gerekiyor.' });
-    }
-    return res.redirect('/login');
-}
+// ─── BU NOKTADAN SONRAKİ HER ŞEY KORUMA ALTINDADIR ─────────────────
+app.use(requireAuth);
 
-// Login sayfasını oturum kontrolü olmadan sun
-app.get('/login', (req, res) => {
-    if (req.session && req.session.loggedIn) {
-        return res.redirect('/panel');
-    }
-    res.sendFile(path.join(__dirname, 'login.html'));
-});
-
-// Ana panel → /panel rotasına taşındı, koruma altında
-app.get('/panel', requireAuth, (req, res) => {
+// Ana Panel (Sadece giriş yapanlar)
+app.get('/panel', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Kök → login'e yönlendir
+// Kök dizin yönlendirmesi
 app.get('/', (req, res) => {
-    if (req.session && req.session.loggedIn) {
-        return res.redirect('/panel');
-    }
-    res.redirect('/login');
+    res.redirect('/panel');
 });
 
-// ─── GOOGLE CALENDAR YETKİLENDİRMESİ ─────────────────────────────────
+// Statik Dosyalar (app.js, style.css vb.) 
+// requireAuth'tan sonra olduğu için artık bunlara da şifresiz erişilemez!
+app.use(express.static(__dirname));
+
+
+// ─── GOOGLE CALENDAR İŞLEMLERİ (KORUMALI) ───────────────────────────
 const SCOPES = ['https://www.googleapis.com/auth/calendar'];
 const CALENDAR_ID = 'dc484578af91bbae30fe5da087d199317240b91a380841960d1ecddc6dc8d9f8@group.calendar.google.com';
 
@@ -89,44 +103,25 @@ let authError = null;
 try {
     const clientEmail = process.env.GOOGLE_CLIENT_EMAIL;
     const privateKeyRaw = process.env.GOOGLE_PRIVATE_KEY;
-
     if (clientEmail && privateKeyRaw) {
         const privateKey = privateKeyRaw.replace(/\\n/g, '\n');
-
-        console.log('📧 Client Email:', clientEmail);
-        console.log('🔑 Private Key uzunluk:', privateKey.length);
-        console.log('🔑 Key başlangıç:', privateKey.substring(0, 40));
-
         const { JWT } = require('google-auth-library');
-        calendarAuth = new JWT({
-            email: clientEmail,
-            key: privateKey,
-            scopes: SCOPES,
-        });
-
+        calendarAuth = new JWT({ email: clientEmail, key: privateKey, scopes: SCOPES });
         calendar = google.calendar({ version: 'v3', auth: calendarAuth });
-        console.log('✅ Google Calendar yetkilendirmesi hazır.');
     } else {
-        console.error('❌ HATA: GOOGLE_CLIENT_EMAIL veya GOOGLE_PRIVATE_KEY bulunamadı!');
-        authError = "Google credential env vars bulunamadı.";
+        authError = "Google credentials eksik.";
     }
 } catch (err) {
-    console.error('Auth Başlatma Hatası:', err);
-    authError = "Yetkilendirme Hatası: " + err.message;
+    authError = err.message;
 }
 
-// ─── API ROTALARI (Tüm API'ler auth koruması altında) ────────────────
-
-// Takvim etkinliklerini getirme
-app.get('/api/calendar/events', requireAuth, async (req, res) => {
-    if (authError || !calendar) {
-        return res.status(500).json({ error: 'Yetkilendirme Hatası', details: authError });
-    }
+// API: Takvim Listele
+app.get('/api/calendar/events', async (req, res) => {
+    if (authError || !calendar) return res.status(500).json({ error: authError });
     try {
         const startOfMonth = new Date();
         startOfMonth.setDate(1);
         startOfMonth.setHours(0, 0, 0, 0);
-
         const response = await calendar.events.list({
             calendarId: CALENDAR_ID,
             timeMin: startOfMonth.toISOString(),
@@ -136,91 +131,53 @@ app.get('/api/calendar/events', requireAuth, async (req, res) => {
         });
         res.json(response.data.items || []);
     } catch (error) {
-        console.error('Takvim API Hatası (List):', error);
-        res.status(500).json({ error: 'Etkinlikler alınamadı', details: error.message });
+        res.status(500).json({ error: error.message });
     }
 });
 
-// Yeni etkinlik (randevu) ekleme
-app.post('/api/calendar/add', requireAuth, async (req, res) => {
-    if (authError) {
-        return res.status(500).json({ error: 'Yetkilendirme Hatası', details: authError });
-    }
+// API: Randevu Ekle
+app.post('/api/calendar/add', async (req, res) => {
     const { summary, description, startDateTime, endDateTime } = req.body;
-
-    if (!summary || !startDateTime || !endDateTime) {
-        return res.status(400).json({ error: 'Eksik parametreler (summary, startDateTime, endDateTime gereklidir)' });
-    }
-
     const event = {
-        summary: summary,
-        description: description || '',
-        start: {
-            dateTime: startDateTime,
-            timeZone: 'Europe/Istanbul',
-        },
-        end: {
-            dateTime: endDateTime,
-            timeZone: 'Europe/Istanbul',
-        },
+        summary, description,
+        start: { dateTime: startDateTime, timeZone: 'Europe/Istanbul' },
+        end: { dateTime: endDateTime, timeZone: 'Europe/Istanbul' },
     };
-
     try {
-        const response = await calendar.events.insert({
-            calendarId: CALENDAR_ID,
-            resource: event,
-        });
+        const response = await calendar.events.insert({ calendarId: CALENDAR_ID, resource: event });
         res.json({ success: true, event: response.data });
     } catch (error) {
-        console.error('Etkinlik ekleme hatası:', error);
-        res.status(500).json({ error: 'Randevu eklenemedi', details: error.message });
+        res.status(500).json({ error: error.message });
     }
 });
 
-// Randevu Silme
-app.delete('/api/calendar/delete/:eventId', requireAuth, async (req, res) => {
-    if (authError) return res.status(500).json({ error: 'Auth hatası', details: authError });
-
-    const { eventId } = req.params;
+// API: Sil
+app.delete('/api/calendar/delete/:eventId', async (req, res) => {
     try {
-        await calendar.events.delete({
-            calendarId: CALENDAR_ID,
-            eventId: eventId,
-        });
-        res.json({ success: true, message: 'Randevu başarıyla silindi.' });
+        await calendar.events.delete({ calendarId: CALENDAR_ID, eventId: req.params.eventId });
+        res.json({ success: true });
     } catch (error) {
-        console.error('Randevu silme hatası:', error);
-        res.status(500).json({ error: 'Randevu silinemedi.', details: error.message });
+        res.status(500).json({ error: error.message });
     }
 });
 
-// Randevu Güncelleme (Sürükle-Bırak/Boyutlandırma için)
-app.patch('/api/calendar/update/:eventId', requireAuth, async (req, res) => {
-    if (authError) return res.status(500).json({ error: 'Auth hatası', details: authError });
-
-    const { eventId } = req.params;
-    const { startDateTime, endDateTime } = req.body;
-
+// API: Güncelle
+app.patch('/api/calendar/update/:eventId', async (req, res) => {
     try {
         await calendar.events.patch({
             calendarId: CALENDAR_ID,
-            eventId: eventId,
+            eventId: req.params.eventId,
             requestBody: {
-                start: { dateTime: startDateTime },
-                end: { dateTime: endDateTime }
+                start: { dateTime: req.body.startDateTime },
+                end: { dateTime: req.body.endDateTime }
             }
         });
         res.json({ success: true });
     } catch (error) {
-        console.error('Randevu güncelleme hatası:', error);
-        res.status(500).json({ error: 'Güncellenemedi.', details: error.message });
+        res.status(500).json({ error: error.message });
     }
 });
 
-// Statik dosyaları sun (login.html, style.css, app.js vs.)
-app.use(express.static(__dirname));
-
 app.listen(PORT, () => {
-    console.log(`Sunucu ${PORT} portunda çalışıyor...`);
-    console.log(`🔐 Giriş: http://localhost:${PORT}/login`);
+    console.log(`Güvenli sunucu ${PORT} portunda aktif.`);
 });
