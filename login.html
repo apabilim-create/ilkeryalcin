@@ -229,7 +229,7 @@
             <div class="logo-subtitle">Yetkili erişim gereklidir</div>
         </div>
 
-        <form id="loginForm" onsubmit="handleLogin(event)">
+        <form id="loginForm" onsubmit="handleLogin(event)" autocomplete="off">
             <div class="form-group">
                 <label class="form-label" for="username">Kullanıcı Adı</label>
                 <input 
@@ -237,7 +237,7 @@
                     id="username" 
                     class="form-input" 
                     placeholder="Kullanıcı adınızı girin"
-                    autocomplete="username"
+                    autocomplete="new-password"
                     required
                 >
             </div>
@@ -248,7 +248,7 @@
                     id="password" 
                     class="form-input" 
                     placeholder="••••••••"
-                    autocomplete="current-password"
+                    autocomplete="new-password"
                     required
                 >
             </div>
